@@ -208,12 +208,13 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
 }) {
   const bots = participants.filter((p) => p.isBot);
   const humans = participants.filter((p) => !p.isBot);
-  const defaultPeer: number | "solo" = humans[0]?.id ?? bots[0]?.id ?? "solo";
-  const [peerId, setPeerId] = useState<number | "solo">(defaultPeer);
+  // null = user hasn't picked yet; derive from current participants so it tracks async load
+  const [peerId, setPeerId] = useState<number | "solo" | null>(null);
   const [withBots, setWithBots] = useState(false);
   const [name, setName] = useState("");
 
-  const selectedIsHuman = peerId !== "solo" && humans.some((h) => h.id === Number(peerId));
+  const effectivePeerId: number | "solo" = peerId !== null ? peerId : (humans[0]?.id ?? bots[0]?.id ?? "solo");
+  const selectedIsHuman = effectivePeerId !== "solo" && humans.some((h) => h.id === Number(effectivePeerId));
 
   return (
     <form
@@ -221,7 +222,7 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
       onSubmit={(e) => {
         e.preventDefault();
         const t = name.trim();
-        if (t) onSubmit(peerId === "solo" ? null : Number(peerId), t, !selectedIsHuman || withBots);
+        if (t) onSubmit(effectivePeerId === "solo" ? null : Number(effectivePeerId), t, !selectedIsHuman || withBots);
       }}
     >
       <Input
@@ -235,7 +236,7 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
       />
       <select
         className="h-8 text-sm bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black dark:text-white rounded px-2"
-        value={String(peerId)}
+        value={String(effectivePeerId)}
         onChange={(e) => setPeerId(e.target.value === "solo" ? "solo" : Number(e.target.value))}
       >
         {humans.map((h) => (
@@ -276,6 +277,7 @@ export function RoomList({ selectedRoomId, onSelectRoom }: Props) {
   const { data: rooms = [] } = useQuery({
     queryKey: ["chat", "rooms"],
     queryFn: () => api.getRooms(),
+    refetchInterval: 10_000,
   });
 
   const { data: allUsers = [] } = useQuery({
