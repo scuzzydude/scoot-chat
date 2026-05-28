@@ -202,7 +202,7 @@ function SectionHeader({ label }: { label: string }) {
 
 function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
   participants: { id: number; username: string; displayName: string | null; isBot: boolean }[];
-  onSubmit: (peerId: number | null, name: string) => void;
+  onSubmit: (peerId: number | null, name: string, withBots: boolean) => void;
   onCancel: () => void;
   pending: boolean;
 }) {
@@ -210,14 +210,18 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
   const humans = participants.filter((p) => !p.isBot);
   const defaultPeer: number | "solo" = humans[0]?.id ?? bots[0]?.id ?? "solo";
   const [peerId, setPeerId] = useState<number | "solo">(defaultPeer);
+  const [withBots, setWithBots] = useState(false);
   const [name, setName] = useState("");
+
+  const selectedIsHuman = peerId !== "solo" && humans.some((h) => h.id === Number(peerId));
+
   return (
     <form
       className="flex flex-col gap-2 px-3 py-2 border-b border-black/10 dark:border-white/10 shrink-0"
       onSubmit={(e) => {
         e.preventDefault();
         const t = name.trim();
-        if (t) onSubmit(peerId === "solo" ? null : Number(peerId), t);
+        if (t) onSubmit(peerId === "solo" ? null : Number(peerId), t, !selectedIsHuman || withBots);
       }}
     >
       <Input
@@ -234,14 +238,25 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
         value={String(peerId)}
         onChange={(e) => setPeerId(e.target.value === "solo" ? "solo" : Number(e.target.value))}
       >
-        {bots.map((b) => (
-          <option key={b.id} value={b.id}>{b.displayName ?? b.username} (bot)</option>
-        ))}
         {humans.map((h) => (
           <option key={h.id} value={h.id}>{h.displayName ?? h.username}</option>
         ))}
+        {bots.map((b) => (
+          <option key={b.id} value={b.id}>{b.displayName ?? b.username} (bot)</option>
+        ))}
         {humans.length > 1 && <option value="solo">Group — all engineers</option>}
       </select>
+      {selectedIsHuman && bots.length > 0 && (
+        <label className="flex items-center gap-2 text-xs text-black/50 dark:text-white/50 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={withBots}
+            onChange={(e) => setWithBots(e.target.checked)}
+            className="rounded"
+          />
+          Include {bots.map((b) => b.displayName ?? b.username).join(", ")} (bot)
+        </label>
+      )}
       <Button size="sm" type="submit" disabled={!name.trim() || pending}>Start</Button>
     </form>
   );
@@ -286,10 +301,11 @@ export function RoomList({ selectedRoomId, onSelectRoom }: Props) {
   }, [rooms, autoCollapsed]);
 
   const createConvo = useMutation({
-    mutationFn: ({ peerId, name }: { peerId: number | null; name: string }) => {
+    mutationFn: ({ peerId, name, withBots }: { peerId: number | null; name: string; withBots: boolean }) => {
       const participant = peerId !== null ? allUsers.find((u) => u.id === peerId) : null;
       const inviteIds = participant && !participant.isBot ? [peerId!] : undefined;
-      return api.createRoom({ name, inviteIds });
+      const skipBots = !withBots;
+      return api.createRoom({ name, inviteIds, skipBots });
     },
     onSuccess: (room) => {
       qc.invalidateQueries({ queryKey: ["chat", "rooms"] });
@@ -355,7 +371,7 @@ export function RoomList({ selectedRoomId, onSelectRoom }: Props) {
       {showNew && (
         <NewConvoForm
           participants={allUsers}
-          onSubmit={(peerId, name) => createConvo.mutate({ peerId, name })}
+          onSubmit={(peerId, name, withBots) => createConvo.mutate({ peerId, name, withBots })}
           onCancel={() => setShowNew(false)}
           pending={createConvo.isPending}
         />

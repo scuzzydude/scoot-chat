@@ -16,7 +16,7 @@ export function createChatApi(apiBase: string) {
   return {
     getRooms: () => f<Room[]>("/chat/rooms"),
 
-    createRoom: (data: { name: string; inviteIds?: number[] }) =>
+    createRoom: (data: { name: string; inviteIds?: number[]; skipBots?: boolean }) =>
       f<Room>("/chat/rooms", { method: "POST", body: JSON.stringify(data) }),
 
     moveRoom: (id: number, data: { name?: string; parentId?: number | null; pinnedModel?: string | null }) =>
