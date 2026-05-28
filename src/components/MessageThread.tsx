@@ -55,21 +55,21 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className="flex items-center gap-1 px-2 py-2 border-b border-white/10 shrink-0">
+      <div className="flex items-center gap-1 px-2 py-2 border-b border-black/10 dark:border-white/10 shrink-0">
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8 text-white/50 hover:text-white shrink-0"
+          className="h-8 w-8 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white shrink-0"
           onClick={onBack}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold text-white truncate block">{roomTitle(room)}</span>
+          <span className="text-sm font-semibold text-black dark:text-white truncate block">{roomTitle(room)}</span>
         </div>
         {privileged && room.roomType !== "folder" && (
           <select
-            className="h-7 text-xs bg-white/5 border border-white/10 text-white/60 rounded px-1.5 shrink-0 hover:text-white transition-colors"
+            className="h-7 text-xs bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 rounded px-1.5 shrink-0 hover:text-black dark:hover:text-white transition-colors"
             value={room.pinnedModel ?? ""}
             onChange={handleModelChange}
             title="LLM model for this conversation"
@@ -84,35 +84,35 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {messages.length === 0 && (
-          <p className="text-center text-white/30 text-sm py-10">No messages yet.</p>
+          <p className="text-center text-black/30 dark:text-white/30 text-sm py-10">No messages yet.</p>
         )}
 
         {messages.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-semibold ${msg.isBot ? "text-blue-400" : "text-white/70"}`}>
+              <span className={`text-xs font-semibold ${msg.isBot ? "text-blue-500 dark:text-blue-400" : "text-black/70 dark:text-white/70"}`}>
                 {msg.displayName ?? msg.username}
               </span>
-              {msg.isBot && <Bot className="h-3 w-3 text-blue-400/60 shrink-0" />}
-              <span className="text-xs text-white/25">{formatTime(msg.createdAt)}</span>
+              {msg.isBot && <Bot className="h-3 w-3 text-blue-500/60 dark:text-blue-400/60 shrink-0" />}
+              <span className="text-xs text-black/25 dark:text-white/25">{formatTime(msg.createdAt)}</span>
             </div>
             {msg.mediaUrl ? (
               <div className="pl-0 mt-1">
                 <img
                   src={msg.mediaUrl}
                   alt="attachment"
-                  className="max-w-xs max-h-64 rounded-lg object-cover border border-white/10 cursor-pointer"
+                  className="max-w-xs max-h-64 rounded-lg object-cover border border-black/10 dark:border-white/10 cursor-pointer"
                   onClick={() => window.open(msg.mediaUrl!, "_blank")}
                   onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }}
                 />
                 {msg.content && (
-                  <p className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap break-words mt-1">
+                  <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words mt-1">
                     {msg.content}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap break-words">
+              <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words">
                 {msg.content}
               </p>
             )}
@@ -120,7 +120,7 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
         ))}
 
         {typingUsers.length > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-white/40 italic">
+          <div className="flex items-center gap-1.5 text-xs text-black/40 dark:text-white/40 italic">
             <Bot className="h-3 w-3 shrink-0" />
             <span>{typingUsers.map((u) => u.displayName ?? u.username).join(", ")} is typing…</span>
           </div>

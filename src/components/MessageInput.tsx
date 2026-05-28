@@ -87,14 +87,14 @@ export function MessageInput({ roomId, sendWs }: Props) {
   const canSend = (text.trim().length > 0 || pendingImage !== null) && !send.isPending;
 
   return (
-    <div className="border-t border-white/10 px-3 py-2 flex flex-col gap-2 shrink-0">
+    <div className="border-t border-black/10 dark:border-white/10 px-3 py-2 flex flex-col gap-2 shrink-0">
       {imagePreview && (
         <div className="relative w-fit">
-          <img src={imagePreview} alt="pending upload" className="h-20 rounded-lg object-cover border border-white/20" />
+          <img src={imagePreview} alt="pending upload" className="h-20 rounded-lg object-cover border border-black/20 dark:border-white/20" />
           <button
             type="button"
             onClick={clearImage}
-            className="absolute -top-1.5 -right-1.5 bg-black border border-white/20 rounded-full p-0.5 text-white/70 hover:text-white"
+            className="absolute -top-1.5 -right-1.5 bg-white dark:bg-black border border-black/20 dark:border-white/20 rounded-full p-0.5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
           >
             <X className="h-3 w-3" />
           </button>
@@ -105,7 +105,7 @@ export function MessageInput({ roomId, sendWs }: Props) {
         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleFileSelect} />
         <Button
           type="button" size="icon" variant="ghost"
-          className="h-9 w-9 shrink-0 text-white/40 hover:text-white"
+          className="h-9 w-9 shrink-0 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
           onClick={() => fileInputRef.current?.click()}
           disabled={send.isPending}
         >
@@ -115,7 +115,7 @@ export function MessageInput({ roomId, sendWs }: Props) {
         <textarea
           ref={textareaRef}
           rows={1}
-          className="flex-1 resize-none bg-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 border border-white/10 focus:outline-none focus:border-white/20 max-h-32 leading-relaxed"
+          className="flex-1 resize-none bg-black/5 dark:bg-white/5 rounded-lg px-3 py-2 text-sm text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30 border border-black/10 dark:border-white/10 focus:outline-none focus:border-black/20 dark:focus:border-white/20 max-h-32 leading-relaxed"
           placeholder={`Message… or ${botHint}`}
           value={text}
           onChange={handleTextChange}
@@ -125,7 +125,7 @@ export function MessageInput({ roomId, sendWs }: Props) {
 
         <Button size="icon" className="h-9 w-9 shrink-0" disabled={!canSend} onClick={submit}>
           {send.isPending
-            ? <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ? <span className="h-4 w-4 rounded-full border-2 border-black/30 dark:border-white/30 border-t-black dark:border-t-white animate-spin" />
             : <Send className="h-4 w-4" />
           }
         </Button>
