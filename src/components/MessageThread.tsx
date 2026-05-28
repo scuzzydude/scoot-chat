@@ -1,9 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Bot } from "lucide-react";
-import { useChatContext } from "../context.js";
+import { useChatContext, isPrivileged } from "../context.js";
 import { roomTitle, type Room, type TypingUser } from "../types.js";
 import { Button } from "./ui.js";
+
+const AVAILABLE_MODELS = [
+  { id: "claude-opus-4-6",   label: "Opus 4.6" },
+  { id: "claude-sonnet-4-6", label: "Sonnet 4.6" },
+  { id: "claude-haiku-4-5",  label: "Haiku 4.5" },
+];
 
 interface Props {
   room: Room;
@@ -12,9 +18,10 @@ interface Props {
 }
 
 export function MessageThread({ room, typingUsers, onBack }: Props) {
-  const { api } = useChatContext();
+  const { api, userFlags } = useChatContext();
   const qc = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const privileged = isPrivileged(userFlags);
 
   const { data: messages = [] } = useQuery({
     queryKey: ["chat", "messages", room.id],
@@ -37,6 +44,15 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
+  function handleModelChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const pinnedModel = e.target.value || null;
+    api.moveRoom(room.id, { pinnedModel }).then((updated) => {
+      qc.setQueryData<Room[]>(["chat", "rooms"], (prev) =>
+        prev?.map((r) => (r.id === room.id ? { ...r, pinnedModel: updated.pinnedModel } : r))
+      );
+    }).catch(() => {});
+  }
+
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <div className="flex items-center gap-1 px-2 py-2 border-b border-white/10 shrink-0">
@@ -51,6 +67,19 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-white truncate block">{roomTitle(room)}</span>
         </div>
+        {privileged && room.roomType !== "folder" && (
+          <select
+            className="h-7 text-xs bg-white/5 border border-white/10 text-white/60 rounded px-1.5 shrink-0 hover:text-white transition-colors"
+            value={room.pinnedModel ?? ""}
+            onChange={handleModelChange}
+            title="LLM model for this conversation"
+          >
+            <option value="">default</option>
+            {AVAILABLE_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>{m.label}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
@@ -74,7 +103,7 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
                   alt="attachment"
                   className="max-w-xs max-h-64 rounded-lg object-cover border border-white/10 cursor-pointer"
                   onClick={() => window.open(msg.mediaUrl!, "_blank")}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }}
                 />
                 {msg.content && (
                   <p className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap break-words mt-1">

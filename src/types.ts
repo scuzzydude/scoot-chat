@@ -8,7 +8,9 @@ export interface Room {
   id: number;
   name: string | null;
   parentId: number | null;
-  isDm: boolean;
+  roomType: string;   // "folder" | "conversation" | "dm"
+  pinnedModel: string | null;
+  peerLabel: string | null;  // "Steve", "Henry · Steve", etc. — null for folders
   createdBy: number;
   createdAt: string;
   lastMessage: { content: string; createdAt: string } | null;
@@ -42,6 +44,6 @@ export interface TypingUser {
 }
 
 export function roomTitle(room: Room): string {
-  if (room.isDm && room.peer) return room.peer.displayName ?? room.peer.username;
+  if (room.roomType === "dm" && room.peer) return room.peer.displayName ?? room.peer.username;
   return room.name ?? "(untitled)";
 }

@@ -16,8 +16,11 @@ export function createChatApi(apiBase: string) {
   return {
     getRooms: () => f<Room[]>("/chat/rooms"),
 
-    createRoom: (data: { name: string }) =>
+    createRoom: (data: { name: string; inviteIds?: number[] }) =>
       f<Room>("/chat/rooms", { method: "POST", body: JSON.stringify(data) }),
+
+    moveRoom: (id: number, data: { name?: string; parentId?: number | null; pinnedModel?: string | null }) =>
+      f<Room>(`/chat/rooms/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
 
     getMessages: (roomId: number, before?: string) =>
       f<Message[]>(`/chat/rooms/${roomId}/messages${before ? `?before=${before}` : ""}`),
@@ -27,8 +30,10 @@ export function createChatApi(apiBase: string) {
 
     getUsers: () => f<Peer[]>("/chat/users"),
 
-    getOrCreateDm: (userId: number) =>
-      f<Room>(`/chat/dms/${userId}`, { method: "POST" }),
+    getParticipants: () => f<(Peer & { isBot: boolean })[]>("/chat/participants"),
+
+    getOrCreateDm: (userId: number, title?: string) =>
+      f<Room>(`/chat/dms/${userId}`, { method: "POST", body: JSON.stringify({ title }) }),
 
     getMembers: (roomId: number) => f<Member[]>(`/chat/rooms/${roomId}/members`),
 
