@@ -7,6 +7,7 @@ export interface Peer {
 export interface Room {
   id: number;
   name: string | null;
+  parentId: number | null;
   isDm: boolean;
   createdBy: number;
   createdAt: string;
