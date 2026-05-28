@@ -26,6 +26,9 @@ export function MessageInput({ roomId, sendWs }: Props) {
       if (pendingImage) mediaUrl = await api.uploadMedia(pendingImage);
       return api.sendMessage(roomId, { content, mediaUrl });
     },
+    onError: (err) => {
+      console.error("send failed:", err);
+    },
     onSuccess: (msg) => {
       qc.setQueryData(
         ["chat", "messages", roomId],

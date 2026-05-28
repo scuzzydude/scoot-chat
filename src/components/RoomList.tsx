@@ -206,10 +206,11 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
   onCancel: () => void;
   pending: boolean;
 }) {
-  const [peerId, setPeerId] = useState<number | "solo">("solo");
-  const [name, setName] = useState("");
   const bots = participants.filter((p) => p.isBot);
   const humans = participants.filter((p) => !p.isBot);
+  const defaultPeer: number | "solo" = bots[0]?.id ?? humans[0]?.id ?? "solo";
+  const [peerId, setPeerId] = useState<number | "solo">(defaultPeer);
+  const [name, setName] = useState("");
   return (
     <form
       className="flex flex-col gap-2 px-3 py-2 border-b border-white/10 shrink-0"
