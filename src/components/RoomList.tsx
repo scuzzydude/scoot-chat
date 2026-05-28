@@ -208,7 +208,7 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
 }) {
   const bots = participants.filter((p) => p.isBot);
   const humans = participants.filter((p) => !p.isBot);
-  const defaultPeer: number | "solo" = bots[0]?.id ?? humans[0]?.id ?? "solo";
+  const defaultPeer: number | "solo" = humans[0]?.id ?? bots[0]?.id ?? "solo";
   const [peerId, setPeerId] = useState<number | "solo">(defaultPeer);
   const [name, setName] = useState("");
   return (
