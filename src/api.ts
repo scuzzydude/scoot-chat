@@ -25,7 +25,10 @@ export function createChatApi(apiBase: string) {
     getMessages: (roomId: number, before?: string) =>
       f<Message[]>(`/chat/rooms/${roomId}/messages${before ? `?before=${before}` : ""}`),
 
-    sendMessage: (roomId: number, data: { content: string; mediaUrl?: string }) =>
+    sendMessage: (
+      roomId: number,
+      data: { content: string; mediaUrl?: string; mediaName?: string; mediaType?: string },
+    ) =>
       f<Message>(`/chat/rooms/${roomId}/messages`, { method: "POST", body: JSON.stringify(data) }),
 
     getUsers: () => f<Peer[]>("/chat/users"),
@@ -40,13 +43,13 @@ export function createChatApi(apiBase: string) {
     markRead: (roomId: number) =>
       f<null>(`/chat/rooms/${roomId}/read`, { method: "POST" }),
 
-    uploadMedia: async (file: File): Promise<string> => {
+    uploadMedia: async (file: File): Promise<{ url: string; name: string; type: string; size: number }> => {
       const form = new FormData();
       form.append("file", file);
       const res = await fetch(`${apiBase}/media/upload`, { method: "POST", body: form });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Upload failed");
-      return (json.data as { url: string }).url;
+      return json.data as { url: string; name: string; type: string; size: number };
     },
   };
 }

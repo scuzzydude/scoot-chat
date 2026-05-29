@@ -27,6 +27,8 @@ export interface Message {
   isBot: boolean;
   content: string;
   mediaUrl: string | null;
+  mediaName: string | null;
+  mediaType: string | null;
   createdAt: string;
 }
 
