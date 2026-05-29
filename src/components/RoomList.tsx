@@ -266,7 +266,7 @@ function NewConvoForm({ participants, onSubmit, onCancel, pending }: {
 // ─── RoomList ────────────────────────────────────────────────────────────────────
 
 export function RoomList({ selectedRoomId, onSelectRoom }: Props) {
-  const { api, userFlags } = useChatContext();
+  const { api, userFlags, title } = useChatContext();
   const qc = useQueryClient();
   const privileged = isPrivileged(userFlags);
 
@@ -359,7 +359,7 @@ export function RoomList({ selectedRoomId, onSelectRoom }: Props) {
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-black/10 dark:border-white/10 shrink-0">
-        <span className="text-sm font-semibold text-black dark:text-white">Steve</span>
+        <span className="text-sm font-semibold text-black dark:text-white">{title}</span>
         <Button
           size="icon" variant="ghost"
           className="h-7 w-7 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white"

@@ -16,6 +16,7 @@ interface ChatConfig {
   api: ChatApi;
   botHint: string;
   userFlags: string;
+  title: string;
 }
 
 const ChatContext = createContext<ChatConfig | null>(null);
@@ -24,16 +25,18 @@ export function ChatProvider({
   apiBase,
   botHint = "@bot to ask anything",
   userFlags = "0",
+  title = "Chat",
   children,
 }: {
   apiBase: string;
   botHint?: string;
   userFlags?: string;
+  title?: string;
   children: ReactNode;
 }) {
   const api = useMemo(() => createChatApi(apiBase), [apiBase]);
   return (
-    <ChatContext.Provider value={{ api, botHint, userFlags }}>
+    <ChatContext.Provider value={{ api, botHint, userFlags, title }}>
       {children}
     </ChatContext.Provider>
   );
