@@ -34,7 +34,7 @@ export default function LoginPage({ onLogin }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="h-full bg-black flex items-center justify-center">
       <div className="w-full max-w-sm px-6">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold text-white tracking-tight">Steve</h1>

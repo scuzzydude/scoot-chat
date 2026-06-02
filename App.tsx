@@ -125,7 +125,7 @@ function ChatApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const { theme, toggle, set } = useTheme()
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-white text-black dark:bg-black dark:text-white">
+    <div className="h-full flex flex-col overflow-hidden bg-white text-black dark:bg-black dark:text-white">
       <header className="h-11 border-b border-black/10 dark:border-white/10 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           <span className="font-semibold text-sm tracking-tight">Steve</span>
@@ -189,25 +189,24 @@ export default function App() {
     navigate('/')
   }
 
+  const DEV = import.meta.env.VITE_DEV_BANNER === '1'
+
+  let content
   if (checking) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+    content = (
+      <div className="h-full bg-black flex items-center justify-center">
         <div className="h-5 w-5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
       </div>
     )
-  }
-
-  if (!user) {
-    return <LoginPage onLogin={() => {
+  } else if (!user) {
+    content = <LoginPage onLogin={() => {
       fetch('/api/v1/auth/me').then(r => r.json()).then(json => {
         if (json.ok) setUser(json.data as AuthUser)
       }).catch(() => {})
     }} />
-  }
-
-  if (isTrackerRoute) {
-    return (
-      <div>
+  } else if (isTrackerRoute) {
+    content = (
+      <div className="h-full overflow-auto">
         <div className="h-10 bg-black border-b border-white/10 flex items-center px-4 gap-3">
           <a href="/" className="text-white/50 text-xs hover:text-white transition-colors">← Steve Chat</a>
           <span className="text-white/20 text-xs">|</span>
@@ -216,7 +215,18 @@ export default function App() {
         <BregmanTracker />
       </div>
     )
+  } else {
+    content = <ChatApp user={user} onLogout={handleLogout} />
   }
 
-  return <ChatApp user={user} onLogout={handleLogout} />
+  if (!DEV) return content
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="shrink-0 h-6 bg-amber-500 text-black text-[11px] font-bold flex items-center justify-center tracking-widest select-none">
+        DEV · :3100 · NOT PRODUCTION
+      </div>
+      <div className="flex-1 min-h-0">{content}</div>
+    </div>
+  )
 }
