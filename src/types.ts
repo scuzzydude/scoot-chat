@@ -29,7 +29,15 @@ export interface Message {
   mediaUrl: string | null;
   mediaName: string | null;
   mediaType: string | null;
+  attachments?: Attachment[];
   createdAt: string;
+}
+
+export interface Attachment {
+  url: string;
+  name: string;
+  type: string;
+  size?: number;
 }
 
 export interface Member {

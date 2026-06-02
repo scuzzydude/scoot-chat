@@ -1,4 +1,4 @@
-import type { Room, Message, Member, Peer } from "./types.js";
+import type { Room, Message, Member, Peer, Attachment } from "./types.js";
 
 async function apiFetch<T>(base: string, path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${path}`, {
@@ -27,7 +27,7 @@ export function createChatApi(apiBase: string) {
 
     sendMessage: (
       roomId: number,
-      data: { content: string; mediaUrl?: string; mediaName?: string; mediaType?: string },
+      data: { content: string; mediaUrl?: string; mediaName?: string; mediaType?: string; attachments?: Attachment[] },
     ) =>
       f<Message>(`/chat/rooms/${roomId}/messages`, { method: "POST", body: JSON.stringify(data) }),
 

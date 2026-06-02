@@ -105,38 +105,53 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
               {msg.isBot && <Bot className="h-3 w-3 text-blue-500/60 dark:text-blue-400/60 shrink-0" />}
               <span className="text-xs text-black/25 dark:text-white/25">{formatTime(msg.createdAt)}</span>
             </div>
-            {msg.mediaUrl ? (
-              <div className="pl-0 mt-1">
-                {isImageAttachment(msg.mediaUrl, msg.mediaType) ? (
-                  <img
-                    src={msg.mediaUrl}
-                    alt={msg.mediaName ?? "attachment"}
-                    className="max-w-xs max-h-64 rounded-lg object-cover border border-black/10 dark:border-white/10 cursor-pointer"
-                    onClick={() => window.open(msg.mediaUrl!, "_blank")}
-                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }}
-                  />
-                ) : (
-                  <a
-                    href={msg.mediaUrl}
-                    download={msg.mediaName ?? undefined}
-                    className="inline-flex items-center gap-2 max-w-xs rounded-lg border border-black/15 dark:border-white/15 bg-black/5 dark:bg-white/5 px-3 py-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors group"
-                  >
-                    <FileIcon className="h-4 w-4 shrink-0 text-black/50 dark:text-white/50" />
-                    <span className="text-sm text-black/80 dark:text-white/80 truncate">{msg.mediaName ?? "Download file"}</span>
-                    <Download className="h-3.5 w-3.5 shrink-0 text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white" />
-                  </a>
-                )}
-                {msg.content && (
-                  <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words mt-1">
+            {(() => {
+              // Prefer the attachments array; fall back to the legacy single-media fields.
+              const atts = (msg.attachments && msg.attachments.length > 0)
+                ? msg.attachments
+                : (msg.mediaUrl ? [{ url: msg.mediaUrl, name: msg.mediaName ?? "attachment", type: msg.mediaType ?? "" }] : []);
+              if (atts.length === 0) {
+                return (
+                  <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words">
                     {msg.content}
                   </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words">
-                {msg.content}
-              </p>
-            )}
+                );
+              }
+              return (
+                <div className="pl-0 mt-1">
+                  <div className="flex flex-wrap gap-2">
+                    {atts.map((a, i) => (
+                      isImageAttachment(a.url, a.type ?? null) ? (
+                        <img
+                          key={i}
+                          src={a.url}
+                          alt={a.name}
+                          className="max-w-xs max-h-64 rounded-lg object-cover border border-black/10 dark:border-white/10 cursor-pointer"
+                          onClick={() => window.open(a.url, "_blank")}
+                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }}
+                        />
+                      ) : (
+                        <a
+                          key={i}
+                          href={a.url}
+                          download={a.name || undefined}
+                          className="inline-flex items-center gap-2 max-w-xs rounded-lg border border-black/15 dark:border-white/15 bg-black/5 dark:bg-white/5 px-3 py-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors group"
+                        >
+                          <FileIcon className="h-4 w-4 shrink-0 text-black/50 dark:text-white/50" />
+                          <span className="text-sm text-black/80 dark:text-white/80 truncate">{a.name || "Download file"}</span>
+                          <Download className="h-3.5 w-3.5 shrink-0 text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white" />
+                        </a>
+                      )
+                    ))}
+                  </div>
+                  {msg.content && (
+                    <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words mt-1">
+                      {msg.content}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ))}
 
