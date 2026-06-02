@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Bot, Download, File as FileIcon } from "lucide-react";
 import { useChatContext, isPrivileged } from "../context.js";
@@ -53,9 +53,16 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
+  // Local state so the select reflects the chosen value immediately — the room
+  // prop won't re-render with the new pinnedModel until the parent re-derives
+  // selectedRoom from the rooms cache, which may lag.
+  const DEFAULT_MODEL = AVAILABLE_MODELS[0].id; // Opus 4.6
+  const [pinnedModel, setPinnedModel] = useState(room.pinnedModel ?? DEFAULT_MODEL);
+
   function handleModelChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const pinnedModel = e.target.value || null;
-    api.moveRoom(room.id, { pinnedModel }).then((updated) => {
+    const next = e.target.value;
+    setPinnedModel(next);
+    api.moveRoom(room.id, { pinnedModel: next }).then((updated) => {
       qc.setQueryData<Room[]>(["chat", "rooms"], (prev) =>
         prev?.map((r) => (r.id === room.id ? { ...r, pinnedModel: updated.pinnedModel } : r))
       );
@@ -79,11 +86,10 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
         {privileged && room.roomType !== "folder" && (
           <select
             className="h-7 text-xs bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 rounded px-1.5 shrink-0 hover:text-black dark:hover:text-white transition-colors"
-            value={room.pinnedModel ?? ""}
+            value={pinnedModel}
             onChange={handleModelChange}
             title="LLM model for this conversation"
           >
-            <option value="">default</option>
             {AVAILABLE_MODELS.map((m) => (
               <option key={m.id} value={m.id}>{m.label}</option>
             ))}
