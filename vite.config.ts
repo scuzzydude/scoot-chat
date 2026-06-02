@@ -7,14 +7,18 @@ import path from "path";
 // React and friends. Without this, scoot-chat/node_modules/react is loaded as a
 // second React instance, useChatContext() can't see the ChatProvider context, and
 // the room list renders blank with no error boundary to catch it.
+// Backend target is env-gated: DEV points at its own steve-server (:3003) so
+// backend code/prompt changes are isolated from PROD, which defaults to :3002.
+const apiTarget = process.env.STEVE_API_TARGET || "http://localhost:3002";
+
 export default defineConfig({
   plugins: [react()],
   server: {
     host: "0.0.0.0",
     port: 3001,
     proxy: {
-      "/api": { target: "http://localhost:3002", changeOrigin: true },
-      "/ws": { target: "http://localhost:3002", ws: true, changeOrigin: true },
+      "/api": { target: apiTarget, changeOrigin: true },
+      "/ws": { target: apiTarget, ws: true, changeOrigin: true },
     },
   },
   resolve: {
