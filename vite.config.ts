@@ -19,6 +19,7 @@ export default defineConfig({
     proxy: {
       "/api": { target: apiTarget, changeOrigin: true },
       "/ws": { target: apiTarget, ws: true, changeOrigin: true },
+      "/media": { target: apiTarget, changeOrigin: true },
     },
   },
   resolve: {
