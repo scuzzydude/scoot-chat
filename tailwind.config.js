@@ -7,5 +7,5 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx,ts,tsx}",
   ],
   theme: { extend: {} },
-  plugins: [],
+  plugins: [require("@tailwindcss/typography")],
 };

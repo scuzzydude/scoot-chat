@@ -3,7 +3,18 @@ import { useRoute, useLocation } from 'wouter'
 import { ChatProvider, RoomList, MessageThread, MessageInput, useChatWebSocket, type Room } from 'scoot-chat'
 import BregmanTracker from './BregmanTracker.jsx'
 import LoginPage from './LoginPage'
-import { Sun, Moon, ChevronDown, LogOut } from 'lucide-react'
+import { TerminalPanel } from './TerminalPanel'
+import { Sun, Moon, ChevronDown, LogOut, PanelRight } from 'lucide-react'
+
+// Map user to their terminal proxy path (same containers as Open WebUI)
+function terminalBase(userFlags: string): string {
+  const flags = BigInt(userFlags ?? "0");
+  // bit 0 = CHIEF_ENGINEER (Brandon) → :8001 proxy
+  // bit 1 = LAB_ENGINEER   (Henry)   → :8002 proxy
+  if (flags & 1n) return "/terminal-brandon";
+  if (flags & 2n) return "/terminal-henry";
+  return "/terminal-brandon"; // default
+}
 
 interface AuthUser {
   id: number
@@ -123,6 +134,9 @@ function ChatApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const { send, typingUsers } = useChatWebSocket(selectedRoom?.id ?? null)
   const { theme, toggle, set } = useTheme()
+  const [termOpen, setTermOpen] = useState(false)
+  const [termWidth, setTermWidth] = useState(360)
+  const termBase = terminalBase(user.userFlags)
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white text-black dark:bg-black dark:text-white">
@@ -136,6 +150,13 @@ function ChatApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setTermOpen(v => !v)}
+            className={`transition-colors ${termOpen ? 'text-black dark:text-white' : 'text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60'}`}
+            title={termOpen ? 'Close terminal' : 'Open terminal'}
+          >
+            <PanelRight className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={toggle}
             className="text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors"
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -146,19 +167,29 @@ function ChatApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
         </div>
       </header>
 
-      <ChatProvider apiBase="/api/v1" botHint="@steve to ask anything" userFlags={user.userFlags}>
-        <div className="flex-1 overflow-hidden min-h-0">
-          {selectedRoom === null ? (
-            <RoomList selectedRoomId={null} onSelectRoom={setSelectedRoom} />
-          ) : (
-            <div className="flex h-full min-h-0">
-              <div className="w-60 border-r border-black/10 dark:border-white/10 shrink-0 hidden md:flex md:flex-col overflow-hidden">
-                <RoomList selectedRoomId={selectedRoom.id} onSelectRoom={setSelectedRoom} />
+      <ChatProvider apiBase="/api/v1" botHint="@steve to ask anything" userFlags={user.userFlags} terminalBase={termBase}>
+        <div className="flex-1 overflow-hidden min-h-0 flex">
+          {/* Chat area */}
+          <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
+            {selectedRoom === null ? (
+              <RoomList selectedRoomId={null} onSelectRoom={setSelectedRoom} />
+            ) : (
+              <div className="flex h-full min-h-0">
+                <div className="w-60 border-r border-black/10 dark:border-white/10 shrink-0 hidden md:flex md:flex-col overflow-hidden">
+                  <RoomList selectedRoomId={selectedRoom.id} onSelectRoom={setSelectedRoom} />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                  <MessageThread room={selectedRoom} typingUsers={typingUsers} onBack={() => setSelectedRoom(null)} />
+                  <MessageInput roomId={selectedRoom.id} sendWs={send} />
+                </div>
               </div>
-              <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                <MessageThread room={selectedRoom} typingUsers={typingUsers} onBack={() => setSelectedRoom(null)} />
-                <MessageInput roomId={selectedRoom.id} sendWs={send} />
-              </div>
+            )}
+          </div>
+
+          {/* Terminal drawer — resizable, slides in from the right */}
+          {termOpen && (
+            <div className="shrink-0 overflow-hidden flex" style={{ width: termWidth }}>
+              <TerminalPanel base={termBase} width={termWidth} onResize={setTermWidth} onClose={() => setTermOpen(false)} />
             </div>
           )}
         </div>

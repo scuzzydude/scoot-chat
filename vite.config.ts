@@ -11,6 +11,25 @@ import path from "path";
 // backend code/prompt changes are isolated from PROD, which defaults to :3002.
 const apiTarget = process.env.STEVE_API_TARGET || "http://localhost:3002";
 
+// Open Terminal containers — same ones used by Open WebUI (:80).
+// API keys injected server-side so they never appear in browser network traffic.
+const TERM_KEY_BRANDON = "7c68f72f73395c478336487c382eda16a92cc7ed1cefa8e32449f217c25471bd";
+const TERM_KEY_HENRY   = "94065cae08143719333b87567b51b9105134876fc5d33b441153413e854f24be";
+
+function terminalProxy(target: string, key: string) {
+  return {
+    target,
+    changeOrigin: true,
+    ws: true,
+    rewrite: (p: string) => p.replace(/^\/terminal-brandon|^\/terminal-henry/, ""),
+    configure: (proxy: import("http-proxy").Server) => {
+      proxy.on("proxyReq", (req: import("http").ClientRequest) => {
+        req.setHeader("Authorization", `Bearer ${key}`);
+      });
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -20,6 +39,8 @@ export default defineConfig({
       "/api": { target: apiTarget, changeOrigin: true },
       "/ws": { target: apiTarget, ws: true, changeOrigin: true },
       "/media": { target: apiTarget, changeOrigin: true },
+      "/terminal-brandon": terminalProxy("http://localhost:8001", TERM_KEY_BRANDON),
+      "/terminal-henry":   terminalProxy("http://localhost:8002", TERM_KEY_HENRY),
     },
   },
   resolve: {

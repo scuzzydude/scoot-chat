@@ -17,6 +17,9 @@ interface ChatConfig {
   botHint: string;
   userFlags: string;
   title: string;
+  /** Proxy base for the user's Open Terminal container, e.g. "/terminal-brandon".
+   *  When set, code blocks in bot messages get a ▶ Run button. */
+  terminalBase?: string;
 }
 
 const ChatContext = createContext<ChatConfig | null>(null);
@@ -26,17 +29,19 @@ export function ChatProvider({
   botHint = "@bot to ask anything",
   userFlags = "0",
   title = "Chat",
+  terminalBase,
   children,
 }: {
   apiBase: string;
   botHint?: string;
   userFlags?: string;
   title?: string;
+  terminalBase?: string;
   children: ReactNode;
 }) {
   const api = useMemo(() => createChatApi(apiBase), [apiBase]);
   return (
-    <ChatContext.Provider value={{ api, botHint, userFlags, title }}>
+    <ChatContext.Provider value={{ api, botHint, userFlags, title, terminalBase }}>
       {children}
     </ChatContext.Provider>
   );

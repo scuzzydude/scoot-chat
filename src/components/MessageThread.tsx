@@ -1,9 +1,85 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Bot, Download, File as FileIcon } from "lucide-react";
+import { ChevronLeft, Bot, Download, File as FileIcon, Play, Loader2, Check, AlertCircle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useChatContext, isPrivileged } from "../context.js";
 import { roomTitle, type Room, type TypingUser } from "../types.js";
 import { Button } from "./ui.js";
+
+// ─── Code block runner ───────────────────────────────────────────────────────
+
+const RUNNABLE = new Set(["python","python3","py","bash","sh","javascript","js","typescript","ts","node"]);
+
+type RunState = "idle" | "running" | "done" | "error";
+
+function RunButton({ lang, code, terminalBase }: { lang: string; code: string; terminalBase: string }) {
+  const [state, setState] = useState<RunState>("idle");
+  const [output, setOutput] = useState<string | null>(null);
+
+  const run = useCallback(async () => {
+    setState("running"); setOutput(null);
+    try {
+      // Wrap in the appropriate interpreter
+      const cmd = lang === "python" || lang === "python3" || lang === "py"
+        ? `python3 -c ${JSON.stringify(code)}`
+        : lang === "javascript" || lang === "js" || lang === "node"
+          ? `node -e ${JSON.stringify(code)}`
+          : lang === "typescript" || lang === "ts"
+            ? `npx -y tsx -e ${JSON.stringify(code)} 2>&1`
+            : `bash -c ${JSON.stringify(code)}`;
+
+      const r = await fetch(`${terminalBase}/execute`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: cmd, timeout: 30 }),
+      });
+      const { id } = await r.json();
+
+      // Poll until done
+      for (let i = 0; i < 60; i++) {
+        await new Promise(res => setTimeout(res, 500));
+        const s = await fetch(`${terminalBase}/execute/${id}/status`).then(r => r.json());
+        if (s.status === "done") {
+          const text = s.output.map((o: { data: string }) => o.data).join("").trimEnd();
+          setOutput(text || "(no output)");
+          setState(s.exit_code === 0 ? "done" : "error");
+          return;
+        }
+      }
+      setOutput("timed out"); setState("error");
+    } catch (e) {
+      setOutput((e as Error).message); setState("error");
+    }
+  }, [lang, code, terminalBase]);
+
+  return (
+    <div className="mt-1">
+      <button
+        onClick={run}
+        disabled={state === "running"}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-colors
+          ${state === "running" ? "bg-black/10 dark:bg-white/10 text-black/40 dark:text-white/40 cursor-not-allowed"
+          : state === "done"    ? "bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20"
+          : state === "error"   ? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+          : "bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60 hover:bg-black/20 dark:hover:bg-white/20"}`}
+      >
+        {state === "running" ? <Loader2 className="h-3 w-3 animate-spin" />
+         : state === "done"  ? <Check className="h-3 w-3" />
+         : state === "error" ? <AlertCircle className="h-3 w-3" />
+         : <Play className="h-3 w-3" />}
+        {state === "running" ? "Running…" : state === "done" ? "Done" : state === "error" ? "Error" : `Run ${lang}`}
+      </button>
+      {output !== null && (
+        <pre className={`mt-2 text-[11px] font-mono p-2 rounded border whitespace-pre-wrap break-words
+          ${state === "error"
+            ? "bg-red-500/5 border-red-500/20 text-red-500"
+            : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80"}`}>
+          {output}
+        </pre>
+      )}
+    </div>
+  );
+}
 
 const AVAILABLE_MODELS = [
   { id: "claude-opus-4-6",   label: "Opus 4.6" },
@@ -49,8 +125,49 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, typingUsers.length]);
 
+  const { terminalBase } = useChatContext();
+
   function formatTime(iso: string) {
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // Render a bot message as markdown with optional ▶ run buttons on code blocks
+  function BotMessage({ content }: { content: string }) {
+    return (
+      <div className="prose prose-sm dark:prose-invert max-w-none
+        prose-p:leading-relaxed prose-p:my-1
+        prose-headings:font-semibold prose-headings:my-2
+        prose-code:text-[11px] prose-code:bg-black/10 prose-code:dark:bg-white/10 prose-code:px-1 prose-code:rounded
+        prose-pre:bg-black/10 prose-pre:dark:bg-white/10 prose-pre:p-0 prose-pre:my-2
+        prose-table:text-xs prose-td:py-1 prose-th:py-1
+        prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            pre({ children }) { return <div>{children}</div>; },
+            code({ className, children, ...props }) {
+              const lang = (className?.replace("language-","") ?? "").toLowerCase();
+              const isBlock = !props.hasOwnProperty("inline") && (className || String(children).includes("\n"));
+              const code = String(children).replace(/\n$/, "");
+              if (!isBlock) return <code className={className} {...props}>{children}</code>;
+              return (
+                <div className="rounded border border-black/10 dark:border-white/10 overflow-hidden my-2">
+                  <div className="flex items-center justify-between px-3 py-1 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10">
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">{lang || "code"}</span>
+                  </div>
+                  <pre className="px-3 py-2 overflow-x-auto text-[11px] font-mono leading-relaxed text-black/80 dark:text-white/80 whitespace-pre m-0">{code}</pre>
+                  {terminalBase && RUNNABLE.has(lang) && (
+                    <div className="px-3 pb-2">
+                      <RunButton lang={lang} code={code} terminalBase={terminalBase} />
+                    </div>
+                  )}
+                </div>
+              );
+            },
+          }}
+        >{content}</ReactMarkdown>
+      </div>
+    );
   }
 
   // Local state so the select reflects the chosen value immediately — the room
@@ -116,13 +233,14 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
               const atts = (msg.attachments && msg.attachments.length > 0)
                 ? msg.attachments
                 : (msg.mediaUrl ? [{ url: msg.mediaUrl, name: msg.mediaName ?? "attachment", type: msg.mediaType ?? "" }] : []);
-              if (atts.length === 0) {
-                return (
-                  <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words">
-                    {msg.content}
-                  </p>
-                );
-              }
+              // Content renderer — bot messages use markdown, human messages plain text
+              const contentEl = msg.content
+                ? msg.isBot
+                  ? <BotMessage content={msg.content} />
+                  : <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+                : null;
+
+              if (atts.length === 0) return contentEl;
               return (
                 <div className="pl-0 mt-1">
                   <div className="flex flex-wrap gap-2">
@@ -150,11 +268,7 @@ export function MessageThread({ room, typingUsers, onBack }: Props) {
                       )
                     ))}
                   </div>
-                  {msg.content && (
-                    <p className="text-sm text-black/90 dark:text-white/90 leading-relaxed whitespace-pre-wrap break-words mt-1">
-                      {msg.content}
-                    </p>
-                  )}
+                  {contentEl && <div className="mt-1">{contentEl}</div>}
                 </div>
               );
             })()}
