@@ -53,7 +53,10 @@ export function MessageInput({ roomId, sendWs }: Props) {
       );
       setText("");
       clearFiles();
-      textareaRef.current?.focus();
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.focus();
+      }
     },
   });
 
@@ -65,6 +68,10 @@ export function MessageInput({ roomId, sendWs }: Props) {
 
   function handleTextChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setText(e.target.value);
+    // Auto-expand: reset to 1 row then grow to fit content (capped by max-h-32)
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
     if (e.target.value.length > 0) sendTyping();
   }
 
